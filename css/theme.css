@@ -1,0 +1,33 @@
+/* 色の決まり。ライト: 白 + イエロー / ダーク: ダークグレー + シアン
+   イエローは白の上だと読みにくいので、文字の色には使わず、背景や線に使う。 */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f6f6f3;
+  --surface-hover: #eeeee9;
+  --text: #1f1f1f;
+  --muted: #6b6b6b;
+  --line: #e2e2dd;
+  --accent: #f5c518;          /* ボタン・線 */
+  --accent-soft: #fff1a8;     /* 行末の単語の背景 */
+  --on-accent: #1f1f1f;       /* アクセント色の上の文字 */
+  --danger: #b3261e;
+  --focus: #1f1f1f;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1e2023;
+  --surface: #26292d;
+  --surface-hover: #30343a;
+  --text: #e8eaed;
+  --muted: #9aa0a6;
+  --line: #3a3e44;
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.28);
+  --on-accent: #0b1a1e;
+  --danger: #f28b82;
+  --focus: #22d3ee;
+}

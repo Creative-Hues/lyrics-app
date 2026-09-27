@@ -1,0 +1,51 @@
+/* PCの並べ方(幅768px以上): 歌詞一覧 | 作詞画面 | 道具パネル を横に並べる。
+   スマホの並べ方は layout-mobile.css。 */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 340px;
+}
+
+.pane {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pane-list {
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.pane-list .lyric-item.is-active,
+.pane-list .folder-item.is-active {
+  background: var(--bg);
+}
+
+.pane-writer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pane-writer .editor {
+  flex: 1;
+}
+
+.pane-tools {
+  border-left: 1px solid var(--line);
+}
+
+/* スマホだけで使う部品 */
+.mobile-head,
+.sheet-handle,
+.kb-bar {
+  display: none;
+}

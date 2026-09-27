@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>作詞アプリ</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="作詞アプリ">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout-pc.css" media="(min-width: 768px)">
+  <link rel="stylesheet" href="css/layout-mobile.css" media="(max-width: 767.98px)">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body data-screen="list">
+  <div class="app">
+    <header class="app-header">
+      <h1 class="app-title">作詞アプリ</h1>
+      <button type="button" id="theme-toggle" class="btn">ダークにする</button>
+    </header>
+
+    <main class="app-main">
+      <!-- 歌詞一覧 -->
+      <section id="lyric-list" class="pane pane-list" aria-label="歌詞一覧"></section>
+
+      <!-- 作詞画面: タグボタン + エディタ -->
+      <section class="pane pane-writer" aria-label="作詞画面">
+        <!-- スマホだけ: 一覧に戻る・その他のメニュー -->
+        <div class="mobile-head">
+          <button type="button" id="back-to-list" class="btn">← 一覧</button>
+          <div class="menu-wrap">
+            <button type="button" id="more-btn" class="btn" aria-label="その他の操作">…</button>
+            <div id="more-menu" class="menu" role="menu" hidden></div>
+          </div>
+        </div>
+
+        <!-- PCだけ: タグボタンと、DeepL・こねこね・AIのボタン -->
+        <div class="writer-toolbar">
+          <div id="tag-bar" class="tag-bar"></div>
+          <div class="editor-actions">
+            <button type="button" id="send-deepl" class="btn btn-small">DeepLで開く</button>
+            <button type="button" id="send-scratch" class="btn btn-small">こねこねへ送る</button>
+            <div class="menu-wrap">
+              <button type="button" id="ask-ai" class="btn btn-small">AIに聞く ▾</button>
+              <div id="ask-ai-menu" class="menu" role="menu" hidden></div>
+            </div>
+          </div>
+        </div>
+        <div id="editor" class="editor"></div>
+      </section>
+
+      <!-- 道具パネル(スマホでは下から引き出すシート + キーボードの上のバー) -->
+      <aside class="pane pane-tools" aria-label="道具パネル">
+        <div class="sheet-handle" role="separator" aria-label="道具パネルの高さを変える"><span></span></div>
+        <div id="tool-panel" class="tool-panel"></div>
+        <div class="kb-bar">
+          <div class="tag-buttons kb-tags"></div>
+          <button type="button" id="kb-rhyme" class="btn kb-btn">韻</button>
+          <button type="button" id="kb-tools" class="btn kb-btn" aria-expanded="false">道具</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="tag-dialog"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

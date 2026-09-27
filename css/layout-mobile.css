@@ -1,0 +1,256 @@
+/* スマホの並べ方(幅768px未満)。「歌詞一覧」と「作詞画面」を切り替えて使う。
+   画面全体を、実際に見えている範囲(--vv-height / --vv-top。viewport.js が入れる)に合わせる。
+   こうすると、キーボードが出ても、下のバーがキーボードのすぐ上に来る。 */
+
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.app {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vv-top, 0);
+  height: var(--vv-height, 100%);
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- 画面の切り替え ---- */
+
+body[data-screen="list"] .pane-writer,
+body[data-screen="list"] .pane-tools,
+body[data-screen="writer"] .pane-list,
+body[data-screen="writer"] .app-header {
+  display: none;
+}
+
+/* ---- 指で押しやすく・勝手に拡大されないように ---- */
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+.btn {
+  min-height: 44px;
+}
+
+.btn-small,
+.folder-actions .btn,
+.lyric-actions .btn {
+  min-height: 40px;
+}
+
+/* 16px より小さい入力欄は、触ると画面が拡大されてしまう。
+   エディタ(.editor-text)はもともと17pxで、下じきの層と大きさをそろえる必要があるので外す */
+input[type="text"],
+input[type="search"],
+select,
+textarea:not(.editor-text),
+.title-input {
+  font-size: 16px !important;
+}
+
+/* ---- 歌詞一覧 ---- */
+
+.pane-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.folder-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.folder-item {
+  width: auto;
+  min-height: 40px;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.folder-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.lyric-list {
+  touch-action: pan-y;
+}
+
+.lyric-item {
+  padding: 8px 10px;
+  /* 長押しで文字が選ばれたり、メニューが出たりしないようにする */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- 作詞画面 ---- */
+
+.pane-writer {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.writer-toolbar {
+  display: none;
+}
+
+.mobile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-head .menu {
+  min-width: 240px;
+}
+
+.pane-writer .editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-meta {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.folder-pick {
+  font-size: 0; /* 「フォルダ」の文字は隠し、選択欄だけ出す */
+}
+
+.folder-pick select {
+  max-width: 110px;
+}
+
+/* 書いている間は、タイトルの行を隠して書く場所を広くする */
+.pane-writer:has(.editor-text:focus) .editor-meta {
+  display: none;
+}
+
+.editor-backdrop,
+.editor-text {
+  padding: 12px 16px 30vh;
+}
+
+/* ---- 道具パネル(シート)とキーボードの上のバー ---- */
+
+.pane-tools {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.sheet-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 22px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sheet-handle span {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.tool-panel {
+  display: flex;
+  flex-direction: column;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+
+.tool-panel.is-dragging {
+  transition: none;
+}
+
+.tool-panel .tool-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.kb-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+
+/* キーボードが出ているときは、下のバー(セーフエリア)の分の余白は要らない */
+.kb-open .kb-bar {
+  padding-bottom: 6px;
+}
+
+.kb-tags {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.kb-tags::-webkit-scrollbar {
+  display: none;
+}
+
+.kb-tags .tag-btn {
+  flex: none;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.kb-btn {
+  flex: none;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+
+.kb-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---- お知らせ・ダイアログ ---- */
+
+.toast {
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  max-width: calc(100vw - 32px);
+}

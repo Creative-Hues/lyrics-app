@@ -1,0 +1,876 @@
+/* 部品の見た目。並べ方(レイアウト)は layout-*.css に分ける。 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+a {
+  color: inherit;
+}
+
+/* ---- ボタン ---- */
+
+.btn {
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(0.95);
+}
+
+.btn-small {
+  min-height: 32px;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+input[type="text"],
+select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+/* ---- 見出し・注記 ---- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.pane-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.empty-note,
+.panel-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.panel-note {
+  margin: 16px 0 0;
+}
+
+/* ---- 歌詞一覧 ---- */
+
+.list-section {
+  padding: 12px;
+}
+
+.list-section + .list-section {
+  border-top: 1px solid var(--line);
+}
+
+.folder-list,
+.lyric-list,
+.rhyme-list,
+.memo-list,
+.tag-edit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.folder-list {
+  margin: 8px 0;
+}
+
+.folder-item {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.folder-item:hover {
+  background: var(--surface-hover);
+}
+
+.folder-item.is-active {
+  border-left-color: var(--accent);
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.folder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.folder-actions .btn {
+  min-height: 32px;
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.lyric-item {
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.lyric-item + .lyric-item {
+  margin-top: 4px;
+}
+
+.lyric-item:hover {
+  background: var(--surface-hover);
+}
+
+.lyric-item.is-active {
+  border-left-color: var(--accent);
+  background: var(--surface);
+}
+
+.lyric-open {
+  display: block;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lyric-title {
+  display: block;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lyric-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.lyric-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ---- タグ ---- */
+
+.writer-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tag-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.tag-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.tag-btn {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px;
+  width: min(420px, calc(100vw - 32px));
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.dialog-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.tag-edit-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.tag-edit-name {
+  flex: 1;
+}
+
+.tag-add,
+.memo-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.tag-add input,
+.memo-add input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ---- エディタ ---- */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.editor-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.title-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px !important;
+  font-weight: 600;
+}
+
+.folder-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.folder-pick select {
+  color: var(--text);
+}
+
+.editor-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.editor-surface {
+  position: relative;
+}
+
+/* textarea と下じきの層は、文字の並びがぴったり重なるよう同じ設定にする */
+.editor-backdrop,
+.editor-text {
+  margin: 0;
+  padding: 16px 20px 40vh;
+  border: 0;
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 1.8;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+}
+
+.editor-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+}
+
+.editor-backdrop mark {
+  color: transparent;
+  background: var(--accent-soft);
+  box-shadow: inset 0 -2px 0 var(--accent);
+  border-radius: 2px;
+}
+
+.editor-text {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--text);
+}
+
+.editor-text::placeholder {
+  color: var(--muted);
+}
+
+/* ---- 道具パネル ---- */
+
+.tool-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+
+.tool-tab {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.tool-tab.is-active {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tool-body {
+  padding: 12px 16px;
+}
+
+.rhyme-word {
+  margin: 0 0 10px;
+}
+
+.rhyme-word strong {
+  font-size: 18px;
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented-btn {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.segmented-btn + .segmented-btn {
+  border-left: 1px solid var(--line);
+}
+
+.segmented-btn.is-active {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.rhyme-status {
+  min-height: 1.5em;
+  margin: 10px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rhyme-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rhyme-item:hover {
+  background: var(--surface-hover);
+}
+
+.rhyme-item-word {
+  flex: 1;
+  font-size: 16px;
+}
+
+.rhyme-item-syl {
+  min-width: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.rhyme-item-check {
+  color: var(--muted);
+}
+
+.rhyme-meaning {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 0;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rhyme-meaning:hover {
+  background: var(--surface-hover);
+}
+
+/* ---- 辞書 ---- */
+
+.dict-input,
+input[type="search"] {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.dict-result {
+  margin-top: 12px;
+}
+
+.dict-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dict-word {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dict-base {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.dict-head .ext-link {
+  margin-left: auto;
+}
+
+.ext-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.dict-entry + .dict-entry {
+  margin-top: 12px;
+}
+
+.dict-entry-head {
+  font-weight: 600;
+}
+
+.dict-senses {
+  margin: 4px 0 0;
+  padding-left: 1.6em;
+  font-size: 14px;
+}
+
+.dict-senses li + li {
+  margin-top: 4px;
+}
+
+.dict-senses strong {
+  font-weight: 700;
+}
+
+/* 元の形(押すとその単語の意味に移る) */
+.dict-ref {
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid var(--accent);
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dict-ref:hover {
+  background: var(--accent-soft);
+}
+
+/* ---- こねこね欄 ---- */
+
+.scratch-text {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 16px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.scratch-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.memo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.memo-list .empty-note {
+  width: 100%;
+}
+
+.memo-chip {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.memo-word,
+.memo-remove {
+  min-height: 36px;
+  border: 0;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.memo-word {
+  padding: 4px 4px 4px 14px;
+  font-size: 15px;
+}
+
+.memo-remove {
+  padding: 4px 12px 4px 8px;
+  color: var(--muted);
+}
+
+.memo-word:hover,
+.memo-remove:hover {
+  background: var(--surface-hover);
+}
+
+/* ---- 並べ替え ---- */
+
+.lyric-list.is-reordering {
+  user-select: none;
+  cursor: grabbing;
+}
+
+.lyric-item.is-dragging {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+  border-left-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  opacity: 0.95;
+}
+
+/* ---- メニュー(AIに聞く) ---- */
+
+.menu-wrap {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--surface-hover);
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+/* ---- 文法 ---- */
+
+.grammar-about {
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.grammar-about a {
+  font-weight: 700;
+}
+
+.grammar-about span {
+  color: var(--muted);
+}
+
+.grammar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.grammar-status {
+  min-height: 1.5em;
+  margin: 10px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grammar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.grammar-card {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.grammar-context {
+  display: block;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grammar-context:hover {
+  background: var(--surface-hover);
+}
+
+.grammar-context mark {
+  color: inherit;
+  background: var(--accent-soft);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.grammar-message {
+  margin: 4px 6px;
+  font-size: 13px;
+}
+
+.grammar-fixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px;
+}
+
+.grammar-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 6px 0;
+}
+
+.grammar-rule {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* ---- お知らせ ---- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.toast.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
