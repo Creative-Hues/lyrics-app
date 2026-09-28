@@ -22,7 +22,12 @@
   <div class="app">
     <header class="app-header">
       <h1 class="app-title">作詞アプリ</h1>
-      <button type="button" id="theme-toggle" class="btn">ダークにする</button>
+      <div class="header-actions">
+        <span id="sync-status" class="sync-status" role="status"></span>
+        <button type="button" id="sync-btn" class="btn">同期</button>
+        <button type="button" id="sync-settings-btn" class="btn">同期の設定</button>
+        <button type="button" id="theme-toggle" class="btn">ダークにする</button>
+      </div>
     </header>
 
     <main class="app-main">
@@ -69,6 +74,7 @@
   </div>
 
   <dialog id="tag-dialog"></dialog>
+  <dialog id="sync-dialog"></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -212,6 +212,21 @@ export function createEditor(root, { onWordPick, onNew }) {
       scrollToCursor();
     },
 
+    // 同期で中身が入れ替わったとき: カーソルとスクロールの位置はそのままで、表示だけ新しくする
+    reload(lyric) {
+      if (lyric.id !== currentId) return;
+      titleInput.value = lyric.title;
+      renderFolderOptions(lyric.folder);
+      if (text.value === lyric.body) return;
+      const { selectionStart: s, selectionEnd: e } = text;
+      const top = scroller.scrollTop;
+      text.value = lyric.body;
+      const n = text.value.length;
+      text.setSelectionRange(Math.min(s, n), Math.min(e, n));
+      refresh();
+      scroller.scrollTop = top;
+    },
+
     close() {
       clearTimeout(saveTimer);
       pending = null;

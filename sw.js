@@ -5,7 +5,7 @@
 //
 // ファイルを増やしたら APP_FILES に足し、VERSION を上げる。
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `sakushi-${VERSION}`;
 
 const APP_FILES = [
@@ -22,8 +22,10 @@ const APP_FILES = [
   'js/dict.js',
   'js/deepl.js',
   'js/lyric-text.js',
+  'js/sync.js',
   'js/api/datamuse.js',
   'js/api/languagetool.js',
+  'js/api/github.js',
   'js/ui/util.js',
   'js/ui/list.js',
   'js/ui/list-reorder.js',
@@ -39,6 +41,7 @@ const APP_FILES = [
   'js/ui/menu.js',
   'js/ui/sheet.js',
   'js/ui/viewport.js',
+  'js/ui/sync-settings.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',

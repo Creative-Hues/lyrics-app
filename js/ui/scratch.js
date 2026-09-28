@@ -54,6 +54,13 @@ export function createScratchPanel(root, { getLyricId }) {
     // 開いている歌詞が変わったとき
     refresh() {
       flush();
+      this.reload();
+    },
+
+    // 同期で中身が入れ替わったとき(今の欄の文は保存しない)
+    reload() {
+      clearTimeout(timer);
+      timer = null;
       lyricId = getLyricId();
       const lyric = store.getLyric(lyricId);
       text.disabled = !lyric;

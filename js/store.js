@@ -24,15 +24,26 @@ const DEFAULT_SETTINGS = {
   ],
 };
 
+// 同期する設定(theme は端末ごとなので入れない)
+const SYNCED_SETTINGS = ['folders', 'tags', 'aiPrompts', 'updatedAt'];
+
 // 端末ごとの状態(同期しない)
 const DEFAULT_LOCAL = {
   lastOpenedId: null,
   view: ALL,
+  sync: { owner: 'Creative-Hues', repo: 'lyrics-data', lastSyncedAt: null },
 };
+
+// 同期のための印(端末の中だけに置く)
+// lyrics:   歌詞ごとの { sha: 前回の同期のときのGitHub側の版, dirty: そのあとこちらで変えた回数(0なら変えていない) }
+// deleted:  こちらで削除して、まだGitHubから消していない歌詞 { id: 削除したときのGitHub側の版 }
+// settings: 設定の { sha, dirty }
+const DEFAULT_SYNC_META = { lyrics: {}, deleted: {}, settings: { sha: null, dirty: 0 } };
 
 const lyrics = new Map();
 let settings = structuredClone(DEFAULT_SETTINGS);
 let local = structuredClone(DEFAULT_LOCAL);
+let syncMeta = structuredClone(DEFAULT_SYNC_META);
 
 // ---- 変更の知らせ ----
 
@@ -57,14 +68,17 @@ function persist(promise) {
 // ---- 起動 ----
 
 export async function init() {
-  const [allLyrics, savedSettings, savedLocal] = await Promise.all([
+  const [allLyrics, savedSettings, savedLocal, savedMeta] = await Promise.all([
     db.getAll('lyrics'),
     db.get('kv', 'settings'),
     db.get('kv', 'local'),
+    db.get('kv', 'syncMeta'),
   ]);
   for (const l of allLyrics) lyrics.set(l.id, l);
   settings = { ...structuredClone(DEFAULT_SETTINGS), ...savedSettings };
   local = { ...structuredClone(DEFAULT_LOCAL), ...savedLocal };
+  local.sync = { ...DEFAULT_LOCAL.sync, ...local.sync };
+  syncMeta = { ...structuredClone(DEFAULT_SYNC_META), ...savedMeta };
   if (local.view !== ALL && local.view !== UNFILED && !settings.folders.includes(local.view)) {
     local.view = ALL;
   }
@@ -109,11 +123,12 @@ export function getLyric(id) {
   return lyrics.get(id) || null;
 }
 
-// view: ALL / UNFILED / フォルダ名。order の小さい順(新しく作ったものが上)
+// view: ALL / UNFILED / フォルダ名。order の小さい順(新しく作ったものが上)。
+// order が同じときは id の順にする(同期した2台で同じ並びになるように)
 export function listLyrics(view) {
   const all = [...lyrics.values()];
   const filtered = view === ALL ? all : all.filter((l) => l.folder === view);
-  return filtered.sort((a, b) => a.order - b.order);
+  return filtered.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 export function createLyric(folder) {
@@ -127,13 +142,15 @@ export function createLyric(folder) {
     memo: [],
     scratch: '',
     cursor: 0,
-    order: orders.length ? Math.min(...orders) - 1 : 0,
+    // 2台で同時に作っても order が重ならないよう、少しずらす
+    order: (orders.length ? Math.min(...orders) - 1 : 0) - Math.random() * 0.5,
     grammarIgnored: [],
     createdAt: now,
     updatedAt: now,
   };
   lyrics.set(lyric.id, lyric);
   persist(db.put('lyrics', lyric));
+  markDirty(lyric.id);
   emit('lyrics');
   return lyric;
 }
@@ -145,8 +162,12 @@ export function updateLyric(id, patch, { touch = true } = {}) {
   Object.assign(lyric, patch);
   if (touch) lyric.updatedAt = nowISO();
   persist(db.put('lyrics', lyric));
+  // カーソル位置だけの変化は、同期で送るほどの変化にしない
   const onlyCursor = Object.keys(patch).every((k) => k === 'cursor');
-  if (!onlyCursor) emit('lyrics');
+  if (!onlyCursor) {
+    markDirty(id);
+    emit('lyrics');
+  }
 }
 
 // 一覧に並んだ順(ids)に並べ替える。ids の歌詞がもともと使っていた order の値を並べ直すので、
@@ -154,10 +175,15 @@ export function updateLyric(id, patch, { touch = true } = {}) {
 export function reorderLyrics(ids) {
   const items = ids.map((id) => lyrics.get(id)).filter(Boolean);
   const slots = items.map((l) => l.order).sort((a, b) => a - b);
+  // 同じ order の歌詞があると並びを表せないので、少しずつずらす(同期した2台の歌詞で起こる)
+  for (let i = 1; i < slots.length; i++) {
+    if (slots[i] <= slots[i - 1]) slots[i] = slots[i - 1] + 1e-6;
+  }
   items.forEach((l, i) => {
     if (l.order === slots[i]) return;
     l.order = slots[i];
     persist(db.put('lyrics', l));
+    markDirty(l.id);
   });
   emit('lyrics');
 }
@@ -165,6 +191,11 @@ export function reorderLyrics(ids) {
 export function deleteLyric(id) {
   if (!lyrics.delete(id)) return;
   persist(db.remove('lyrics', id));
+  // 一度GitHubに送った歌詞なら、次の同期でGitHubからも消す
+  const sha = syncMeta.lyrics[id]?.sha;
+  delete syncMeta.lyrics[id];
+  if (sha) syncMeta.deleted[id] = sha;
+  saveSyncMeta();
   if (local.lastOpenedId === id) setLocal('lastOpenedId', null);
   emit('lyric-deleted', id);
   emit('lyrics');
@@ -231,7 +262,7 @@ export function addFolder(rawName) {
   const problem = checkFolderName(name);
   if (problem) return problem;
   settings.folders.push(name);
-  saveSettings();
+  touchSettings();
   emit('folders');
   return null;
 }
@@ -242,7 +273,7 @@ export function renameFolder(oldName, rawName) {
   const problem = checkFolderName(name, oldName);
   if (problem) return problem;
   settings.folders = settings.folders.map((f) => (f === oldName ? name : f));
-  saveSettings();
+  touchSettings();
   for (const l of lyrics.values()) {
     if (l.folder === oldName) updateLyric(l.id, { folder: name }, { touch: false });
   }
@@ -254,7 +285,7 @@ export function renameFolder(oldName, rawName) {
 // 中の歌詞は消さずに「未分類」へ移す
 export function deleteFolder(name) {
   settings.folders = settings.folders.filter((f) => f !== name);
-  saveSettings();
+  touchSettings();
   for (const l of lyrics.values()) {
     if (l.folder === name) updateLyric(l.id, { folder: UNFILED }, { touch: false });
   }
@@ -266,6 +297,14 @@ export function deleteFolder(name) {
 
 function saveSettings() {
   persist(db.put('kv', settings, 'settings'));
+}
+
+// 同期する設定(フォルダ・タグ・質問)を変えたとき
+function touchSettings() {
+  settings.updatedAt = nowISO();
+  syncMeta.settings.dirty += 1;
+  saveSyncMeta();
+  saveSettings();
 }
 
 export function getTheme() {
@@ -288,7 +327,7 @@ export function getAiPrompts() {
 
 export function setTags(tags) {
   settings.tags = [...tags];
-  saveSettings();
+  touchSettings();
   emit('tags');
 }
 
@@ -301,4 +340,169 @@ export function getLocal(key) {
 export function setLocal(key, value) {
   local[key] = value;
   persist(db.put('kv', local, 'local'));
+}
+
+// ---- GitHubのトークン(端末の中だけに置く。設定にも同期データにも入れない) ----
+
+export async function getToken() {
+  return (await db.get('kv', 'githubToken')) || '';
+}
+
+export function setToken(token) {
+  return token ? db.put('kv', token, 'githubToken') : db.remove('kv', 'githubToken');
+}
+
+// ---- 同期から使う読み書き(js/sync.js) ----
+
+function saveSyncMeta() {
+  persist(db.put('kv', syncMeta, 'syncMeta'));
+}
+
+function markDirty(id) {
+  const m = (syncMeta.lyrics[id] ||= { sha: null, dirty: 0 });
+  m.dirty += 1;
+  saveSyncMeta();
+}
+
+export function getSyncMeta() {
+  return syncMeta;
+}
+
+// 同期先を変えたとき: 前の同期先の版の記録は使えないので、全部を「まだ送っていない」ことにする
+export function resetSyncMeta() {
+  syncMeta = structuredClone(DEFAULT_SYNC_META);
+  for (const id of lyrics.keys()) syncMeta.lyrics[id] = { sha: null, dirty: 1 };
+  syncMeta.settings.dirty = 1;
+  saveSyncMeta();
+}
+
+// 送った・取ってきたあとに、GitHub側の版を覚える。
+// dirtyWas: 送る前の dirty。送っている間にまた書いていたら、「変えた」の印は残す
+export function setLyricSynced(id, sha, dirtyWas) {
+  // 送っている間に、この端末で削除されていた: GitHubから消すときに使う版を新しくする
+  if (!lyrics.has(id)) {
+    if (syncMeta.deleted[id]) syncMeta.deleted[id] = sha;
+    saveSyncMeta();
+    return;
+  }
+  const m = (syncMeta.lyrics[id] ||= { sha: null, dirty: 0 });
+  m.sha = sha;
+  if (dirtyWas === undefined || m.dirty === dirtyWas) m.dirty = 0;
+  saveSyncMeta();
+}
+
+export function clearDeleted(id) {
+  delete syncMeta.deleted[id];
+  saveSyncMeta();
+}
+
+export function setSettingsSynced(sha, dirtyWas) {
+  syncMeta.settings.sha = sha;
+  if (dirtyWas === undefined || syncMeta.settings.dirty === dirtyWas) syncMeta.settings.dirty = 0;
+  saveSyncMeta();
+}
+
+// GitHubに置く形の歌詞
+export function lyricForSync(id) {
+  const l = lyrics.get(id);
+  return l ? structuredClone(l) : null;
+}
+
+// GitHubから取ってきた歌詞で置き換える(「変えた」の印はつけない)。
+// カーソル位置は、この端末の位置のままにする
+export function putLyricFromSync(remote) {
+  const old = lyrics.get(remote.id);
+  const lyric = { ...remote, cursor: old ? old.cursor : remote.cursor || 0 };
+  lyrics.set(lyric.id, lyric);
+  persist(db.put('lyrics', lyric));
+  emit('lyric-replaced', lyric.id);
+  emit('lyrics');
+}
+
+// GitHubで消された歌詞を、この端末からも消す
+export function removeLyricFromSync(id) {
+  if (!lyrics.delete(id)) return;
+  persist(db.remove('lyrics', id));
+  delete syncMeta.lyrics[id];
+  saveSyncMeta();
+  if (local.lastOpenedId === id) setLocal('lastOpenedId', null);
+  emit('lyric-deleted', id);
+  emit('lyrics');
+}
+
+// 一覧で below のすぐ下に来る order(below と、その次の歌詞のあいだ)
+function orderJustBelow(below) {
+  const next = Math.min(...[...lyrics.values()].map((l) => l.order).filter((o) => o > below.order), below.order + 1);
+  return (below.order + next) / 2;
+}
+
+// ぶつかったときに、古いほうを新しい id の「コピー」として残す。一覧では元の歌詞のすぐ下に置く
+export function addLyricCopy(from, below) {
+  const d = new Date(from.updatedAt);
+  const stamp = `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const lyric = {
+    ...structuredClone(from),
+    id: newId(),
+    title: `${from.title || '無題'}(コピー ${stamp})`,
+    order: orderJustBelow(below),
+  };
+  lyrics.set(lyric.id, lyric);
+  persist(db.put('lyrics', lyric));
+  markDirty(lyric.id);
+  emit('lyrics');
+  return lyric;
+}
+
+export function settingsForSync() {
+  return Object.fromEntries(SYNCED_SETTINGS.map((k) => [k, structuredClone(settings[k])]));
+}
+
+// GitHubから取ってきた設定で置き換える(「変えた」の印はつけない)
+export function putSettingsFromSync(remote) {
+  for (const k of SYNCED_SETTINGS) {
+    if (remote[k] !== undefined) settings[k] = structuredClone(remote[k]);
+  }
+  saveSettings();
+  afterSettingsChanged();
+}
+
+// はじめて同期するとき: どちらかにあるフォルダ・タグ・質問を全部残す。合わせた結果は「変えた」ことにする
+export function mergeSettingsFromSync(remote) {
+  const union = (a = [], b = [], key = (x) => x) => {
+    const seen = new Set(a.map(key));
+    return [...a, ...b.filter((x) => !seen.has(key(x)))];
+  };
+  settings.folders = union(remote.folders, settings.folders);
+  settings.tags = union(remote.tags, settings.tags);
+  settings.aiPrompts = union(remote.aiPrompts, settings.aiPrompts, (p) => p.label);
+  touchSettings();
+  afterSettingsChanged();
+}
+
+// 歌詞が入っているのに一覧にないフォルダを足す。足したら true
+export function addMissingFolders() {
+  const missing = [];
+  for (const l of lyrics.values()) {
+    if (l.folder !== UNFILED && !settings.folders.includes(l.folder) && !missing.includes(l.folder)) {
+      missing.push(l.folder);
+    }
+  }
+  if (!missing.length) return false;
+  settings.folders.push(...missing);
+  touchSettings();
+  afterSettingsChanged();
+  return true;
+}
+
+function afterSettingsChanged() {
+  if (local.view !== ALL && local.view !== UNFILED && !settings.folders.includes(local.view)) {
+    setLocal('view', ALL);
+  }
+  emit('folders');
+  emit('tags');
+}
+
+// 同期のようすを画面に知らせる
+export function emitSync(detail) {
+  emit('sync', detail);
 }

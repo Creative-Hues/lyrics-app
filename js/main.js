@@ -14,6 +14,8 @@ import { createAskAi, askAi } from './ui/ask-ai.js';
 import { createMenu } from './ui/menu.js';
 import { createSheet } from './ui/sheet.js';
 import { trackViewport } from './ui/viewport.js';
+import { createSyncUi } from './ui/sync-settings.js';
+import { setupSync, syncNow, syncIfStale, pushChanges } from './sync.js';
 import { openInDeepL } from './deepl.js';
 import { toast } from './ui/util.js';
 
@@ -134,6 +136,32 @@ async function start() {
 
   store.on('error', toast);
 
+  // ---- 同期 ----
+
+  const syncUi = createSyncUi({
+    status: $('#sync-status'),
+    syncButton: $('#sync-btn'),
+    settingsButton: $('#sync-settings-btn'),
+    dialog: $('#sync-dialog'),
+  });
+
+  // 同期の前に、書きかけの内容を保存する
+  setupSync({
+    flush: () => {
+      editor.flush();
+      scratch.flush();
+    },
+  });
+
+  // 同期で、開いている歌詞の中身が入れ替わったとき
+  store.on('lyric-replaced', (id) => {
+    if (editor.currentId !== id) return;
+    editor.reload(store.getLyric(id));
+    scratch.reload();
+    memo.refresh();
+    grammar.refresh();
+  });
+
   // ---- エディタから送る(DeepL・こねこね欄) ----
 
   function textToSend() {
@@ -184,6 +212,8 @@ async function start() {
       ...store.getAiPrompts().map((p, i) => ({ label: `AIに聞く: ${p.label}`, action: () => askAi(editor, i) })),
       { label: null },
       { label: 'タグを編集', action: () => tags.openEditor() },
+      { label: null },
+      { label: '同期', action: () => syncUi.syncOrSetup() },
     ],
   });
 
@@ -194,11 +224,15 @@ async function start() {
   });
   store.on('settings', applyTheme);
 
-  // タブを閉じる・別のタブに移る・アプリを裏に回すときに、まだ保存していない分を保存する
+  // タブを閉じる・別のタブに移る・アプリを裏に回すときに、まだ保存していない分を保存し、
+  // 変えた分をGitHubに送る。戻ってきたときは、前回から1分以上たっていたら同期する
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       editor.flush();
       scratch.flush();
+      pushChanges();
+    } else {
+      syncIfStale();
     }
   });
   window.addEventListener('pagehide', () => {
@@ -217,6 +251,7 @@ async function start() {
   }
 
   setupOffline();
+  syncNow({ auto: true }); // アプリを開いたとき
 }
 
 start().catch((err) => {

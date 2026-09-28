@@ -29,12 +29,13 @@
 
 - `css/theme.css` 色 / `css/base.css` 部品の見た目 / `css/layout-pc.css` PCの並べ方(幅768px以上)/ `css/layout-mobile.css` スマホの並べ方(幅768px未満)
 - `js/store.js` 歌詞・設定の読み書き(画面の部品はここを通す)/ `js/db.js` IndexedDB / `js/api/` 外部API / `js/ui/` 画面の部品
-- `js/dict.js` 辞書の検索 / `js/deepl.js` DeepLを開く / `js/lyric-text.js` 行末の単語などの決まり(どれも画面に依存しない)
+- `js/dict.js` 辞書の検索 / `js/deepl.js` DeepLを開く / `js/lyric-text.js` 行末の単語などの決まり / `js/sync.js` GitHubとの同期(どれも画面に依存しない)
 - `dict/` EJDict-handのデータ(変換せずにそのまま置く)
 - `sw.js` Service Worker(アプリのファイルを端末に置いておく係)。**ファイルを増やしたら `APP_FILES` に足し、`VERSION` を上げる**
 - `manifest.webmanifest` と `icons/` ホーム画面に置くための情報とアイコン
 - 動作確認: `node dev/serve.js` → http://localhost:8000(ES modulesはファイルを直接開くと動かないため)
   - Service Workerが働くので、ファイルを変えたあとは、読み込み直しを2回すると新しい版になる
+- 同期の確認: `node dev/fake-github.js`(GitHub APIのふりをするサーバー)→ 開発者ツールで `localStorage.setItem('dev:githubApi', 'http://localhost:8787')`、トークンは `fake-token`。`localhost` と `127.0.0.1` は保存場所が別なので、2台分として使える
 
 ## 進め方
 

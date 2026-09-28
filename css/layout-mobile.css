@@ -56,6 +56,7 @@ a {
    エディタ(.editor-text)はもともと17pxで、下じきの層と大きさをそろえる必要があるので外す */
 input[type="text"],
 input[type="search"],
+input[type="password"],
 select,
 textarea:not(.editor-text),
 .title-input {
@@ -253,4 +254,10 @@ textarea:not(.editor-text),
 .toast {
   bottom: calc(80px + env(safe-area-inset-bottom));
   max-width: calc(100vw - 32px);
+}
+
+/* ---- ヘッダー(歌詞一覧の上): ボタンが入りきらないときは折り返す ---- */
+
+.header-actions {
+  flex: 1;
 }
