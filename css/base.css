@@ -93,6 +93,27 @@ select {
   background: var(--bg);
 }
 
+/* ---- 新しい版があるときの帯 ---- */
+
+.update-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 16px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.update-bar-text {
+  flex: 1;
+}
+
+.update-bar-close {
+  min-width: 40px;
+}
+
 /* ---- 見出し・注記 ---- */
 
 .header-actions {

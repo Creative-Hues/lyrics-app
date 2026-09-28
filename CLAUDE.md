@@ -31,13 +31,16 @@
 - `js/store.js` 歌詞・設定の読み書き(画面の部品はここを通す)/ `js/db.js` IndexedDB / `js/api/` 外部API / `js/ui/` 画面の部品
 - `js/dict.js` 辞書の検索 / `js/deepl.js` DeepLを開く / `js/lyric-text.js` 行末の単語などの決まり / `js/sync.js` GitHubとの同期(どれも画面に依存しない)
 - `dict/` EJDict-handのデータ(変換せずにそのまま置く)
-- `sw.js` Service Worker(アプリのファイルを端末に置いておく係)。**ファイルを増やしたら `APP_FILES` に足し、`VERSION` を上げる**
+- `sw.js` Service Worker(アプリのファイルを端末に置いておく係)。**アプリのファイル(js・css・html など)を変えたら `VERSION` を上げる。ファイルを増やしたら `APP_FILES` にも足す**
+- `js/update.js` 新しい版への切り替え / `js/ui/update-bar.js` 「新しい版があります [更新する]」の帯
 - `manifest.webmanifest` と `icons/` ホーム画面に置くための情報とアイコン
 - 動作確認: `node dev/serve.js` → http://localhost:8000(ES modulesはファイルを直接開くと動かないため)
-  - Service Workerが働くので、ファイルを変えたあとは、読み込み直しを2回すると新しい版になる
+  - Service Workerは端末に置いた版だけを使うので、ファイルを変えても `VERSION` を上げるまで反映されない。作っている間は、Chromeの開発者ツール →「Application」→「Service workers」→「Bypass for network」にチェックを入れておく
 - 同期の確認: `node dev/fake-github.js`(GitHub APIのふりをするサーバー)→ 開発者ツールで `localStorage.setItem('dev:githubApi', 'http://localhost:8787')`、トークンは `fake-token`。`localhost` と `127.0.0.1` は保存場所が別なので、2台分として使える
 
 ## 進め方
+
+- **公開(push)の前に、必ず `node dev/check-release.js` を流す。** `APP_FILES` の入れ忘れと `VERSION` の上げ忘れを確かめる。問題が出たら直してから push する
 
 - フェーズごとに進める。各フェーズの前に計画を見せてから実装する。
 - `SPEC.md` の「例」「要確認」「未記載」の点は、勝手に決めずに計画の段階で確認する。

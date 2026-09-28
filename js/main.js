@@ -16,6 +16,8 @@ import { createSheet } from './ui/sheet.js';
 import { trackViewport } from './ui/viewport.js';
 import { createSyncUi } from './ui/sync-settings.js';
 import { setupSync, syncNow, syncIfStale, pushChanges } from './sync.js';
+import { createUpdateBar } from './ui/update-bar.js';
+import { setupUpdates, applyUpdate } from './update.js';
 import { openInDeepL } from './deepl.js';
 import { toast } from './ui/util.js';
 
@@ -36,12 +38,8 @@ function showScreen(name) {
   store.setLocal('screen', name);
 }
 
-// ホーム画面に置けるようにし、ファイルを端末に置いておく係(Service Worker)を登録する
-function setupOffline() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch((err) => console.error(err));
-  }
-  // ブラウザに「データを残してほしい」とお願いする
+// ブラウザに「データを残してほしい」とお願いする
+function requestPersist() {
   navigator.storage?.persist?.().catch(() => {});
 }
 
@@ -62,7 +60,7 @@ async function start() {
     panel: $('#tool-panel'),
     handle: $('.sheet-handle'),
     toggle: $('#kb-tools'),
-    fixedParts: () => [$('.mobile-head'), $('.sheet-handle'), $('.kb-bar')],
+    fixedParts: () => [$('#update-bar'), $('.mobile-head'), $('.sheet-handle'), $('.kb-bar')],
   });
   trackViewport(() => sheet.refresh());
 
@@ -250,7 +248,20 @@ async function start() {
     showScreen('list');
   }
 
-  setupOffline();
+  // ファイルを端末に置いておく係(Service Worker)を登録し、新しい版があれば切り替える
+  const updateBar = createUpdateBar($('#update-bar'), {
+    onUpdate: applyUpdate,
+    onChange: () => sheet.refresh(),
+  });
+  setupUpdates({
+    beforeReload: () => {
+      editor.flush();
+      scratch.flush();
+    },
+    onReady: () => updateBar.show(),
+  });
+  requestPersist();
+
   syncNow({ auto: true }); // アプリを開いたとき
 }
 

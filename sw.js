@@ -1,11 +1,14 @@
 // Service Worker(アプリのファイルを端末に置いておく係)。
 // - 最初に開いたときに、アプリのファイルと辞書を端末に保存する(電波がなくても開ける・辞書が引ける)。
-// - 開いたときは端末に置いた版をすぐ出し、裏で新しい版を取ってくる(次に開いたときに新しい版になる)。
-// - 外のサービス(Datamuse・LanguageTool など)への問い合わせには手を出さない。
+// - ふだんは端末に置いた版だけを使う。ファイルを1つずつ入れ替えることはしない(古いファイルと新しいファイルが混ざらないように)。
+// - 新しい版(VERSION を上げた sw.js)が届いたら、全ファイルを取ってきて待たせておく。
+//   画面の「更新する」を押したとき(または開いた直後)に切り替わる(js/update.js)。
+// - 外のサービス(Datamuse・LanguageTool・GitHub など)への問い合わせには手を出さない。
 //
-// ファイルを増やしたら APP_FILES に足し、VERSION を上げる。
+// アプリのファイルを変えたら VERSION を上げる。ファイルを増やしたら APP_FILES にも足す。
+// 公開(push)の前に node dev/check-release.js を流す。
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `sakushi-${VERSION}`;
 
 const APP_FILES = [
@@ -23,6 +26,7 @@ const APP_FILES = [
   'js/deepl.js',
   'js/lyric-text.js',
   'js/sync.js',
+  'js/update.js',
   'js/api/datamuse.js',
   'js/api/languagetool.js',
   'js/api/github.js',
@@ -42,6 +46,7 @@ const APP_FILES = [
   'js/ui/sheet.js',
   'js/ui/viewport.js',
   'js/ui/sync-settings.js',
+  'js/ui/update-bar.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
@@ -50,13 +55,33 @@ const APP_FILES = [
 
 const DICT_FILES = [...'abcdefghijklmnopqrstuvwxyz'].map((c) => `dict/${c}.txt`);
 
+// 「更新する」ボタンがない前の版(v1・v2)が動いていたら、ボタンを出せないので、待たずに切り替える
+const OLD_CACHES = ['sakushi-v1', 'sakushi-v2'];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll([...APP_FILES, ...DICT_FILES]))
-      .then(() => self.skipWaiting()),
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // ブラウザの一時保存(HTTPキャッシュ)を通さずに、GitHubから直接取ってくる。
+      // 通すと、10分以内に取った古いファイルが混ざることがある
+      await cache.addAll(APP_FILES.map((f) => new Request(f, { cache: 'reload' })));
+      // 辞書は版が変わっても中身が同じなので、前の版の保存から移す(なければ取ってくる)
+      await Promise.all(
+        DICT_FILES.map(async (f) => {
+          const old = await caches.match(f);
+          if (old) await cache.put(f, old);
+          else await cache.add(new Request(f, { cache: 'reload' }));
+        }),
+      );
+      const keys = await caches.keys();
+      if (keys.some((k) => OLD_CACHES.includes(k))) self.skipWaiting();
+    })(),
   );
+});
+
+// 画面の「更新する」から呼ばれる: 待たせていた新しい版に切り替える
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // 古い版の保存を消す
@@ -78,19 +103,15 @@ self.addEventListener('fetch', (event) => {
   const key = req.mode === 'navigate' ? new URL('./', self.registration.scope).href : req;
 
   event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
+    (async () => {
+      const cache = await caches.open(CACHE);
       const cached = await cache.match(key, { ignoreSearch: true });
-      const fresh = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(key, res.clone());
-          return res;
-        })
-        .catch(() => null);
-      if (cached) {
-        event.waitUntil(fresh); // 裏で新しい版を取ってくる
-        return cached;
+      if (cached) return cached;
+      try {
+        return await fetch(req);
+      } catch {
+        return new Response('オフラインです', { status: 503 });
       }
-      return (await fresh) || new Response('オフラインです', { status: 503 });
-    }),
+    })(),
   );
 });
